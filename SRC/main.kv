@@ -1,0 +1,86 @@
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition
+
+ScreenManagement:
+    transition: FadeTransition()
+    MainScreen:
+    Labeler:
+    Labeler_ChooseFile:
+    Labeler_Labeling:
+	
+<MainScreen>:
+    name: 'main'
+
+    Button:
+        on_release: app.root.current = 'Labeler'
+        text: 'Another Screen'
+        font_size: 50
+            
+<Labeler>:
+    name: 'Labeler'
+    GridLayout:
+        rows : 4
+        BoxLayout:
+            orientation: "horizontal"
+            Button:
+                text: 'back'
+                on_release: app.root.current = 'main'
+                text: 'back to the home screen'
+            Button:
+                text: 'back'
+                on_release: app.root.current = 'Labeler_ChooseFile'
+                text: 'Local File'
+
+        Button:
+            size_hint: 0.2, 0.2
+            pos_hint: {'x': 0.5, 'y':0.2}
+            text: 'back'
+            on_release: app.root.current = 'main'
+            text: 'back to the home screen'
+
+<Labeler_ChooseFile>:
+    name: 'Labeler_ChooseFile'
+    AnchorLayout:
+        BoxLayout:
+
+            size_hint: None, None
+            size: (root.width, root.height * 0.9)
+
+
+            FileChooserIconView: 
+                pos_hint: {'x': 0.5, 'y':0.05}
+
+        BoxLayout:
+            size_hint: None, None
+            size: (root.width, root.height/3)
+            anchor_y: "bottom"
+            Button:
+                size_hint: 1.0, 0.3
+                on_release: app.root.current = 'Labeler'
+                text: 'Back'
+                pos_hint: {'x': 0.5, 'y':-1.0}
+            Button:
+                size_hint: 1.0, 0.3
+                on_release: app.root.current = 'Labeler_Labeling'
+                text: 'Continue'
+                pos_hint: {'x': 0.5, 'y':-1.0}
+
+
+<Labeler_Labeling>:
+    name: 'Labeler_Labeling'
+    GridLayout:
+        BoxLayout:
+
+        BoxLayout:
+            size_hint: None, None
+            size: (root.width, root.height/3)
+            anchor_y: "bottom"
+            Button:
+                size_hint: 1.0, 0.3
+                on_release: app.root.current = 'Labeler_ChooseFile'
+                text: 'Back'
+            Button:
+                size_hint: 1.0, 0.3
+                on_release: app.root.current = 'Labeler_Labeling'
+                text: 'Save'
+
+
