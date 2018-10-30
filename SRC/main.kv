@@ -47,6 +47,7 @@ ScreenManagement:
 
 
             FileChooserIconView: 
+                id: file_chooser
                 pos_hint: {'x': 0.5, 'y':0.05}
 
         BoxLayout:
@@ -59,16 +60,26 @@ ScreenManagement:
                 text: 'Back'
                 pos_hint: {'x': 0.5, 'y':-1.0}
             Button:
+                on_press: root.start_labeling()
                 size_hint: 1.0, 0.3
                 on_release: app.root.current = 'Labeler_Labeling'
                 text: 'Continue'
                 pos_hint: {'x': 0.5, 'y':-1.0}
+                
 
 
 <Labeler_Labeling>:
     name: 'Labeler_Labeling'
     GridLayout:
-        BoxLayout:
+        rows : 2
+        GridLayout:
+            cols : 2
+            FileChooserListView:
+                id: listfile
+                path: root.path
+                on_selection: root.selected(filechooser.selection)
+            BoxLayout:
+
 
         BoxLayout:
             size_hint: None, None
@@ -78,6 +89,10 @@ ScreenManagement:
                 size_hint: 1.0, 0.3
                 on_release: app.root.current = 'Labeler_ChooseFile'
                 text: 'Back'
+            Button:
+                size_hint: 1.0, 0.3
+                text: 'Test'
+                on_press: root.setLookPath()
             Button:
                 size_hint: 1.0, 0.3
                 on_release: app.root.current = 'Labeler_Labeling'

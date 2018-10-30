@@ -8,8 +8,6 @@ from Labeler.Labeler import *
 class MainScreen(Screen):
     pass
 
-
-
 class ScreenManagement(ScreenManager):
     pass
 
