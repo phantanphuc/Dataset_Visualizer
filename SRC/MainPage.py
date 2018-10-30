@@ -4,6 +4,11 @@ from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.uix.gridlayout import GridLayout
 
 from Labeler.Labeler import *
+from kivy.config import Config
+
+Config.set('graphics', 'width', '1200')
+Config.set('graphics', 'height', '640')
+
 
 class MainScreen(Screen):
     pass

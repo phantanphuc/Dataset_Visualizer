@@ -73,11 +73,15 @@ ScreenManagement:
     GridLayout:
         rows : 2
         GridLayout:
-            cols : 2
-            FileChooserListView:
-                id: listfile
-                path: root.path
-                on_selection: root.selected(filechooser.selection)
+            cols : 3
+            # FileChooserListView:
+            #     id: listfile
+            #     path: root.path
+            #     on_selection: root.selected(filechooser.selection)
+            #     size_hint: None, None
+            #     size: (root.width / 6, root.height * 0.8)
+            TreeView:
+                id: treeview
             BoxLayout:
 
 
