@@ -10,137 +10,19 @@ ScreenManagement:
 <MainScreen>:
     name: 'main'
 
-    Button:
-        on_release: app.root.current = 'Labeler'
-        text: 'Another Screen'
-        font_size: 50
-            
-<Labeler>:
-    name: 'Labeler'
     GridLayout:
-        rows : 4
-        BoxLayout:
-            orientation: "horizontal"
-            Button:
-                text: 'back'
-                on_release: app.root.current = 'main'
-                text: 'back to the home screen'
-            Button:
-                text: 'back'
-                on_release: app.root.current = 'Labeler_ChooseFile'
-                text: 'Local File'
+        cols : 2
 
         Button:
-            size_hint: 0.2, 0.2
-            pos_hint: {'x': 0.5, 'y':0.2}
-            text: 'back'
-            on_release: app.root.current = 'main'
-            text: 'back to the home screen'
+            text: 'TEST'
+            font_size: 50
+            on_release: root.show_load()
 
-<Labeler_ChooseFile>:
-    name: 'Labeler_ChooseFile'
-    AnchorLayout:
-        BoxLayout:
-
-            size_hint: None, None
-            size: (root.width, root.height * 0.9)
+        Button:
+            on_release: app.root.current = 'Labeler'
+            text: 'Another Screen'
+            font_size: 50
+    
+            
 
 
-            FileChooserIconView: 
-                id: file_chooser
-                pos_hint: {'x': 0.5, 'y':0.05}
-
-        BoxLayout:
-            size_hint: None, None
-            size: (root.width, root.height/3)
-            anchor_y: "bottom"
-            Button:
-                size_hint: 1.0, 0.3
-                on_release: app.root.current = 'Labeler'
-                text: 'Back'
-                pos_hint: {'x': 0.5, 'y':-1.0}
-            Button:
-                on_press: root.start_labeling()
-                size_hint: 1.0, 0.3
-                on_release: app.root.current = 'Labeler_Labeling'
-                text: 'Continue'
-                pos_hint: {'x': 0.5, 'y':-1.0}
-                
-
-
-<Labeler_Labeling>:
-    name: 'Labeler_Labeling'
-    GridLayout:
-        rows : 2
-        GridLayout:
-            cols : 2
-            # FileChooserListView:
-            #     id: listfile
-            #     path: root.path
-            #     on_selection: root.selected(filechooser.selection)
-            #     size_hint: None, None
-            #     size: (root.width / 6, root.height * 0.8)
-            ScrollView:
-                id: kr_scroll
-                do_scroll_x: False
-                size_hint: None, None
-                size: (root.width / 4, root.height * 0.8)
-
-
-                TreeView:
-                    id: treeview
-                    size_hint: None, None
-                    size: (root.width / 4, root.height * 0.8)
-                    minimum_height : root.height * 0.8
-            GridLayout:
-                rows : 2
-                GridLayout:
-                    cols : 2
-                    Spinner:
-                        size_hint: None, None
-                        size: (self.parent.width / 4, self.parent.height / 6)
-                        values:('Please Browse Label' ,'')
-                    Button:
-                        size_hint: None, None
-                        size: (self.parent.width / 4, self.parent.height / 6)
-                        text: 'Browse Label'
-                        on_release: root.show_load()
-                BoxLayout:
-
-
-        BoxLayout:
-            size_hint: None, None
-            size: (root.width, root.height/3)
-            anchor_y: "bottom"
-            Button:
-                size_hint: 1.0, 0.3
-                on_release: app.root.current = 'Labeler_ChooseFile'
-                text: 'Back'
-            Button:
-                size_hint: 1.0, 0.3
-                text: 'Test'
-                on_press: root.setLookPath()
-            Button:
-                size_hint: 1.0, 0.3
-                on_release: app.root.current = 'Labeler_Labeling'
-                text: 'Save'
-
-
-<LoadDialog>:
-    BoxLayout:
-        size: root.size
-        pos: root.pos
-        orientation: "vertical"
-        FileChooserListView:
-            id: filechooser
-
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-            Button:
-                text: "Cancel"
-                on_release: root.cancel()
-
-            Button:
-                text: "Load"
-                on_release: root.load(filechooser.path, filechooser.selection)

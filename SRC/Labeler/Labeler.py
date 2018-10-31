@@ -9,6 +9,31 @@ from kivy.uix.treeview import TreeViewLabel
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 
+Builder.load_string("""
+#:kivy 1.1.0
+
+<LoadDialog>:
+	BoxLayout:
+		size: root.size
+		pos: root.pos
+		orientation: "vertical"
+		FileChooserListView:
+			id: filechooser
+			path: '/home/phucpt2/Desktop/visual/prj/Dataset_Visualizer/Label'
+
+		BoxLayout:
+			size_hint_y: None
+			height: 30
+			Button:
+				text: "Cancel"
+				on_release: root.cancel()
+
+			Button:
+				text: "Load"
+				on_release: root.load(filechooser.path, filechooser.selection)""")
+
+Builder.load_file("kv/Labeler.kv")
+
 class LoadDialog(FloatLayout):
 	load = ObjectProperty(None)
 	cancel = ObjectProperty(None)
@@ -17,10 +42,11 @@ class LabelerManager:
 	def __init__(self):
 		self.path = '/'
 		self.labeled_data = {}
+		self.label_classes = {}
 
 
 	# Structure of labeled data:
-	# {Key, ()}
+	# {Key, (path, node)}
 	#
 
 	@staticmethod
@@ -29,7 +55,14 @@ class LabelerManager:
 
 	def setPath(self, path):
 		self.path = path
+		self.labeled_data = {}
 		Labeler_Labeling.path = path
+
+	def restartLabelClasses(self):
+		self.label_classes = {}
+
+	def addToLabelClasses(self, key, value):
+		self.label_classes['key'] = value
 
 	def getPath(self):
 		return self.path
@@ -43,15 +76,24 @@ class LabelerManager:
 
 				if root == path:
 					tree_node = treeview.add_node(TreeViewLabel(text=file, is_open=True))
-					treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
+
 					# print(root)
 					# print(dirs)
 					# print(file)
+
+					full_path = root + '/' + file
+
+					self.labeled_data[file] = (full_path, tree_node)
+
+					# treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
+					
 
 				else:
 					break
 
 
+	def updateCurrentImage(self, key, canvas):
+		canvas.source = self.labeled_data[key][0]
 
 
 LabelerManagerInstance = LabelerManager()
@@ -66,11 +108,14 @@ class Labeler_ChooseFile(Screen):
 
 
 class Labeler_Labeling(Screen):
+
+	loadfile = ObjectProperty(None)
+
 	path = LabelerManager.getInstance().path
 
 	def on_parent(self, widget, parent):
 
-		LabelerManager.getInstance().generateTreeView("D:\dataset\img", self.ids['treeview'])
+		LabelerManager.getInstance().generateTreeView("/home/phucpt2/Desktop/visual/data/img", self.ids['treeview'])
 
 		self.toref = 0
 
@@ -78,22 +123,15 @@ class Labeler_Labeling(Screen):
 		self.ids['treeview'].bind(minimum_height=self.ids['treeview'].setter("height"))
 
 
-
-	def populate_tree_view(self, tree_view, parent, node):
-		if parent is None:
-			tree_node = tree_view.add_node(TreeViewLabel(text=node['node_id'],
-														 is_open=True))
-		else:
-			tree_node = tree_view.add_node(TreeViewLabel(text=node['node_id'],
-														 is_open=True), parent)
-
-		for child_node in node['children']:
-			self.populate_tree_view(tree_view, tree_node, child_node)
-
 	def setLookPath(self):
-		print(self.ids['treeview'].selected_node.text)
-		print(self.ids['treeview'].selected_node.parent_node.text)
+		# print(self.ids['treeview'].selected_node.text)
+		# print(self.ids['treeview'].selected_node.parent_node.text)
 		# self.ids['treeview'].add_node(TreeViewLabel(text='blah',  is_open=True), self.ids['treeview'].selected_node)
+		print(self.ids)
+		print(self.canvas)
+		print(self.canvas.ids.children)
+		# LabelerManager.getInstance().updateCurrentImage(self.ids['label_spinner'].text, self.canvas.ids['rect'])
+
 		
 	def show_load(self):
 		content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
@@ -103,7 +141,21 @@ class Labeler_Labeling(Screen):
 
 
 	def load(self, path, filename):
-		print(filename)
+		with open(filename[0], 'r') as file:
+			lines = file.readlines()
+			label_arr = []
+			LabelerManager.getInstance().restartLabelClasses()
+			for line in lines:
+				info = line.replace('\n', '').split(',')
+				label_arr.append(info[0])
+				LabelerManager.getInstance().addToLabelClasses(info[0], info[1])
+
+			self.ids['label_spinner'].values = label_arr
+
+			
+				
+
 		self.dismiss_popup()
 	def dismiss_popup(self):
 		self._popup.dismiss()
+

@@ -1,25 +1,39 @@
 from kivy.app import App
 from kivy.lang import Builder
+
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.treeview import TreeViewLabel
+from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
+from kivy.core.image import Image as CoreImage
 
 from Labeler.Labeler import *
+
 from kivy.config import Config
+
+
 
 Config.set('graphics', 'width', '1200')
 Config.set('graphics', 'height', '640')
 
+class LoadDialog(FloatLayout):
+	load = ObjectProperty(None)
+	cancel = ObjectProperty(None)
+
 
 class MainScreen(Screen):
-    pass
-
+	pass
 class ScreenManagement(ScreenManager):
-    pass
-
-presentation = Builder.load_file("main.kv")
+	pass
 
 class MainApp(App):
-    def build(self):
-        return presentation
+	pass
 
-MainApp().run()
+
+
+if __name__ == '__main__':
+	
+	presentation = Builder.load_file("main.kv")
+	MainApp().run()

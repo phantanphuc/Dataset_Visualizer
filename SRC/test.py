@@ -1,135 +1,82 @@
 from kivy.app import App
-from kivy.uix.floatlayout import FloatLayout
-from kivy.factory import Factory
-from kivy.properties import ObjectProperty
-from kivy.uix.popup import Popup
 from kivy.lang import Builder
-
-Builder.load_string("""
-#:kivy 1.1.0
-
-<Root>:
-	text_input: text_input
-
-	BoxLayout:
-		orientation: 'vertical'
-		BoxLayout:
-			size_hint_y: None
-			height: 30
-			Button:
-				text: 'Load'
-				on_release: root.show_load()
-			Button:
-				text: 'Save'
-				on_release: root.show_save()
-
-		BoxLayout:
-			TextInput:
-				id: text_input
-				text: ''
-
-			RstDocument:
-				text: text_input.text
-				show_errors: True
-
-<LoadDialog>:
-	BoxLayout:
-		size: root.size
-		pos: root.pos
-		orientation: "vertical"
-		FileChooserListView:
-			id: filechooser
-
-		BoxLayout:
-			size_hint_y: None
-			height: 30
-			Button:
-				text: "Cancel"
-				on_release: root.cancel()
-
-			Button:
-				text: "Load"
-				on_release: root.load(filechooser.path, filechooser.selection)
-
-<SaveDialog>:
-	text_input: text_input
-	BoxLayout:
-		size: root.size
-		pos: root.pos
-		orientation: "vertical"
-		FileChooserListView:
-			id: filechooser
-			on_selection: text_input.text = self.selection and self.selection[0] or ''
-
-		TextInput:
-			id: text_input
-			size_hint_y: None
-			height: 30
-			multiline: False
-
-		BoxLayout:
-			size_hint_y: None
-			height: 30
-			Button:
-				text: "Cancel"
-				on_release: root.cancel()
-
-			Button:
-				text: "Save"
-				on_release: root.save(filechooser.path, text_input.text)""")
-import os
+from kivy.core.image import Image as CoreImage
+from kivy.properties import ListProperty, ObjectProperty, NumericProperty
+from kivy.clock import Clock
+from kivy.core.window import Window
+from math import sin, cos, pi
 
 
-class LoadDialog(FloatLayout):
-	load = ObjectProperty(None)
-	cancel = ObjectProperty(None)
+kv = '''
+BoxLayout:
+    Widget:
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 1
+            Mesh:
+                vertices: app.mesh_points
+                indices: range(len(app.mesh_points))
+                texture: app.mesh_texture
+                mode: 'triangle_fan'
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: None
+        width: 100
+        Slider:
+            value: app.offset_x
+            on_value: app.offset_x = args[1]
+            min: -1
+            max: 1
+        Slider:
+            value: app.offset_y
+            on_value: app.offset_y = args[1]
+            min: -1
+            max: 1
+        Slider:
+            value: app.radius
+            on_value: app.radius = args[1]
+            min: 10
+            max: 1000
+        Slider:
+            value: app.sin_wobble
+            on_value: app.sin_wobble = args[1]
+            min: -50
+            max: 50
+        Slider:
+            value: app.sin_wobble_speed
+            on_value: app.sin_wobble_speed = args[1]
+            min: 0
+            max: 50
+            step: 1
+'''
 
 
-class SaveDialog(FloatLayout):
-	save = ObjectProperty(None)
-	text_input = ObjectProperty(None)
-	cancel = ObjectProperty(None)
+class MeshBallApp(App):
+    mesh_points = ListProperty([])
+    mesh_texture = ObjectProperty(None)
+    radius = NumericProperty(500)
+    offset_x = NumericProperty(.5)
+    offset_y = NumericProperty(.5)
+    sin_wobble = NumericProperty(0)
+    sin_wobble_speed = NumericProperty(0)
 
+    def build(self):
+        self.mesh_texture = CoreImage('data/logo/kivy-icon-512.png').texture
+        Clock.schedule_interval(self.update_points, 0)
+        return Builder.load_string(kv)
 
-class Root(FloatLayout):
-	loadfile = ObjectProperty(None)
-	savefile = ObjectProperty(None)
-	text_input = ObjectProperty(None)
+    def update_points(self, *args):
+        points = [Window.width / 2, Window.height / 2, .5, .5]
+        i = 0
+        while i < 2 * pi:
+            i += 0.01 * pi
+            points.extend([
+                Window.width / 2 + cos(i) * (self.radius + self.sin_wobble * sin(i * self.sin_wobble_speed)),
+                Window.height / 2 + sin(i) * (self.radius + self.sin_wobble * sin(i * self.sin_wobble_speed)),
+                self.offset_x + sin(i),
+                self.offset_y + cos(i)])
 
-	def dismiss_popup(self):
-		self._popup.dismiss()
-
-	def show_load(self):
-		content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
-		self._popup = Popup(title="Load file", content=content,
-							size_hint=(0.9, 0.9))
-		self._popup.open()
-
-	def load(self, path, filename):
-		print(filename)
-		self.dismiss_popup()
-
-	def show_save(self):
-		content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
-		self._popup = Popup(title="Save file", content=content,
-							size_hint=(0.9, 0.9))
-		self._popup.open()
-
-	
-
-	def save(self, path, filename):
-		with open(os.path.join(path, filename), 'w') as stream:
-			stream.write(self.text_input.text)
-
-		self.dismiss_popup()
-
-
-class Editor(App):
-	def build(self):
-		return Root()
-
-
-
+        self.mesh_points = points
 
 if __name__ == '__main__':
-	Editor().run()
+    MeshBallApp().run()
