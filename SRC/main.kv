@@ -73,16 +73,39 @@ ScreenManagement:
     GridLayout:
         rows : 2
         GridLayout:
-            cols : 3
+            cols : 2
             # FileChooserListView:
             #     id: listfile
             #     path: root.path
             #     on_selection: root.selected(filechooser.selection)
             #     size_hint: None, None
             #     size: (root.width / 6, root.height * 0.8)
-            TreeView:
-                id: treeview
-            BoxLayout:
+            ScrollView:
+                id: kr_scroll
+                do_scroll_x: False
+                size_hint: None, None
+                size: (root.width / 4, root.height * 0.8)
+
+
+                TreeView:
+                    id: treeview
+                    size_hint: None, None
+                    size: (root.width / 4, root.height * 0.8)
+                    minimum_height : root.height * 0.8
+            GridLayout:
+                rows : 2
+                GridLayout:
+                    cols : 2
+                    Spinner:
+                        size_hint: None, None
+                        size: (self.parent.width / 4, self.parent.height / 6)
+                        values:('Please Browse Label' ,'')
+                    Button:
+                        size_hint: None, None
+                        size: (self.parent.width / 4, self.parent.height / 6)
+                        text: 'Browse Label'
+                        on_release: root.show_load()
+                BoxLayout:
 
 
         BoxLayout:
@@ -103,3 +126,21 @@ ScreenManagement:
                 text: 'Save'
 
 
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)

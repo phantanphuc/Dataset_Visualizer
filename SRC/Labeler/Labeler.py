@@ -4,8 +4,14 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeViewLabel
+from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
 
+class LoadDialog(FloatLayout):
+	load = ObjectProperty(None)
+	cancel = ObjectProperty(None)
 
 class LabelerManager:
 	def __init__(self):
@@ -69,7 +75,7 @@ class Labeler_Labeling(Screen):
 		self.toref = 0
 
 		self.ids['treeview'].hide_root = True
-		
+		self.ids['treeview'].bind(minimum_height=self.ids['treeview'].setter("height"))
 
 
 
@@ -89,4 +95,15 @@ class Labeler_Labeling(Screen):
 		print(self.ids['treeview'].selected_node.parent_node.text)
 		# self.ids['treeview'].add_node(TreeViewLabel(text='blah',  is_open=True), self.ids['treeview'].selected_node)
 		
-		# 
+	def show_load(self):
+		content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+		self._popup = Popup(title="Load file", content=content,
+							size_hint=(0.9, 0.9))
+		self._popup.open()
+
+
+	def load(self, path, filename):
+		print(filename)
+		self.dismiss_popup()
+	def dismiss_popup(self):
+		self._popup.dismiss()
