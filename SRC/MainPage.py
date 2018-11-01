@@ -9,14 +9,13 @@ from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.core.image import Image as CoreImage
 
-from Labeler.Labeler import *
-
 from kivy.config import Config
-
-
-
 Config.set('graphics', 'width', '1200')
 Config.set('graphics', 'height', '640')
+
+from Labeler.Labeler import *
+
+
 
 class LoadDialog(FloatLayout):
 	load = ObjectProperty(None)

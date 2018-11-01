@@ -13,7 +13,8 @@ from kivy.graphics import Color, Line, Rectangle
 from kivy.uix.label import Label
 from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
-
+# D:\AA\repo2\GItrepo\Dataset_Visualizer\Label
+# /home/phucpt2/Desktop/visual/prj/Dataset_Visualizer/Label
 Builder.load_string("""
 #:kivy 1.1.0
 
@@ -24,7 +25,7 @@ Builder.load_string("""
 		orientation: "vertical"
 		FileChooserListView:
 			id: filechooser
-			path: '/home/phucpt2/Desktop/visual/prj/Dataset_Visualizer/Label'
+			path: 'D:/AA/repo2/GItrepo/Dataset_Visualizer/Label'
 
 		BoxLayout:
 			size_hint_y: None
@@ -96,18 +97,62 @@ class LabelerManager:
 					break
 
 
-	def updateCurrentImage(self, key, canvas):
-		# canvas = self.draw_canvas
+	def updateCurrentImage(self, key, canvas, clicked_node):
+		# canvas = self.draw_canvas self.ids['treeview'].selected_node
 		canvas.canvas.clear()
-		with canvas.canvas:
 
-			if True:
+		if key in self.labeled_data.keys():
 
-				with canvas.canvas:
-					canvas.bg = Rectangle(source=self.labeled_data[key][0], 
-							pos=canvas.pos, size=canvas.size)
+			with canvas.canvas:
+				canvas.bg = Rectangle(source=self.labeled_data[key][0], pos=canvas.pos, size=canvas.size)
 
+			treenode = self.labeled_data[key]
+			# {Key, (path, node, [child])}
+			# child {name, id, label, rect, node}
 
+			objlist = []
+			inv_map = {v: k for k, v in self.label_classes.items()}
+			for node in treenode[2]:
+
+				obj = InstructionGroup()
+				obj.add(Color(1,0,0))
+				label = CoreLabel(inv_map[node['label']], font_size=15)
+				label.refresh()
+				text = label.texture
+				obj.add(Rectangle(size=text.size, pos=(node['rect'][0], node['rect'][1]), texture=text))
+				obj.add(Line(rectangle = node['rect'], width = 1.5))
+				objlist.append(obj)
+				canvas.canvas.add(obj)
+
+			return objlist
+
+		else:
+			parent_key = clicked_node.parent_node.text
+
+			with canvas.canvas:
+				canvas.bg = Rectangle(source=self.labeled_data[parent_key][0], pos=canvas.pos, size=canvas.size)
+
+			treenode = self.labeled_data[parent_key]
+			# {Key, (path, node, [child])}
+			# child {name, id, label, rect, node}
+
+			objlist = []
+			inv_map = {v: k for k, v in self.label_classes.items()}
+			for node in treenode[2]:
+
+				if node['name'] == key:
+
+					obj = InstructionGroup()
+					obj.add(Color(1,0,0))
+					label = CoreLabel(inv_map[node['label']], font_size=15)
+					label.refresh()
+					text = label.texture
+					obj.add(Rectangle(size=text.size, pos=(node['rect'][0], node['rect'][1]), texture=text))
+					obj.add(Line(rectangle = node['rect'], width = 1.5))
+					objlist.append(obj)
+					canvas.canvas.add(obj)
+
+			return objlist
 
 			# self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_002.png', 
 			# 		pos=self.draw_canvas.pos, size=self.draw_canvas.size)
@@ -118,13 +163,13 @@ class LabelerManager:
 
 		curr_id = 0
 
-		if len(tree_node[2]) > 0:
-			curr_id = tree_node[2][-1]['id']
+		if len(treenode[2]) > 0:
+			curr_id = treenode[2][-1]['id'] + 1
 
 		child_node = {}
 
 
-		child_node_tree = treenode[1].add_node(TreeViewLabel(text=label + ' ' + str(curr_id),  is_open=True), tree_node)
+		child_node_tree = treeview.add_node(TreeViewLabel(text=label + ' ' + str(curr_id),  is_open=True), treenode[1])
 
 		child_node['name'] = label + ' ' + str(curr_id)
 		child_node['id'] = curr_id
@@ -134,6 +179,33 @@ class LabelerManager:
 
 		treenode[2].append(child_node)
 
+	def deleteCurrentLabel(self, canvas, key, clicked_node, treeview):
+		
+
+		# {Key, (path, node, [child])}
+		# child {name, id, label, rect, node}
+
+		if key not in self.labeled_data.keys():
+			parent_key = clicked_node.parent_node.text
+			parent_node = self.labeled_data[parent_key]
+
+			del_index = 0
+
+			for node in parent_node[2]:
+				if node['name'] == key:
+					treeview.remove_node(node['node'])
+					break
+
+				del_index = del_index + 1
+
+			del parent_node[2][del_index]
+			canvas.canvas.clear()
+
+			with canvas.canvas:
+				canvas.bg = Rectangle(source=parent_node[0], pos=canvas.pos, size=canvas.size)
+
+			return True
+		return False
 
 LabelerManagerInstance = LabelerManager()
 
@@ -162,16 +234,18 @@ class Labeler_Labeling(Screen):
 
 	def on_parent(self, widget, parent):
 
+		self.just_delete = True
 		self.draw_canvas = self.ids['canvas_labeling']
+		self.drawing_rect = (0,0,0,0)
 
-		LabelerManager.getInstance().generateTreeView("/home/phucpt2/Desktop/visual/data/img/", self.ids['treeview'])
+		LabelerManager.getInstance().generateTreeView("D:/dataset/img/", self.ids['treeview'])
 
 		self.ids['treeview'].hide_root = True
 		self.ids['treeview'].bind(minimum_height=self.ids['treeview'].setter("height"))
 
 
 		with self.draw_canvas.canvas:
-			self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_002.png', 
+			self.draw_canvas.bg = Rectangle(source='D:/dataset/img/carsgraz_004.png', 
 					pos=self.draw_canvas.pos, size=self.draw_canvas.size)
 
 	
@@ -189,26 +263,20 @@ class Labeler_Labeling(Screen):
 	def chooseImage(self):
 
 		self.clearAllLabeledRect()
+		self.just_delete = False
 
 		if (self.ids['treeview'].selected_node != None):
 			print(self.ids['treeview'].selected_node.text)
-			LabelerManager.getInstance().updateCurrentImage(self.ids['treeview'].selected_node.text, self.draw_canvas)
+			self.rects = LabelerManager.getInstance().updateCurrentImage(self.ids['treeview'].selected_node.text, self.draw_canvas, self.ids['treeview'].selected_node)
 
 
 	def setLookPath(self):
-
-		
-
-		self.loadChoosenImage()
+		pass
 
 			# self.draw_canvas.canvas.remove_group(data)
 
 	def test2(self):
-		with self.draw_canvas.canvas:
-			print('test2')
-			print(self.draw_canvas.canvas.remove(self.data))
-			self.canvas.remove(self.data)
-		# self.draw_canvas.canvas.remove_group('my_group')
+
 		pass
 
 
@@ -246,51 +314,57 @@ class Labeler_Labeling(Screen):
 	drawing = False
 
 	def on_touch_up(self, touch):
+		if self.ids['label_spinner'].text == '' or self.just_delete:
+			return
 		self.drawing = False
 		# registCurrentLabel(self, filename, rect, label, treeview):
+		mouse_loc = touch.pos
 
-		print(touch)
-		print(self.ids['canvas_labeling'].pos)
-		print(self.ids['canvas_labeling'].size)
-		print(self.ids['canvas_labeling'].pos_hint)
+		im_loc = self.ids['canvas_labeling'].pos
+		im_size = self.ids['canvas_labeling'].size
 
-		# LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'])
+		if im_loc[0] < mouse_loc[0] and mouse_loc[0] < im_loc[0] + im_size[0] and im_loc[1] < mouse_loc[1] and mouse_loc[1] < im_loc[1] + im_size[1]:
+			if self.drawing_rect[2] > 5:
+				LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'])
 
 	def on_touch_move(self, touch):
+
+		if self.ids['label_spinner'].text == '' or self.just_delete:
+			return
+
 		if self.drawing:
 			self.drawing_rect = (self.points[0], self.points[1], touch.pos[0] - self.points[0], touch.pos[1] - self.points[1])
 			self.obj.children[-1].rectangle = self.drawing_rect
 			# self.obj.children[-1].size = self.drawing_rect
 			pass
 		else:
-			self.drawing = True
-			self.points = touch.pos
-			self.obj = InstructionGroup()
-			self.obj.add(Color(1,0,0))
-			# self.obj.add(LineRectangle(pos=touch.pos, size=(10, 10), opacity=0.2))
-			
-
-			label = CoreLabel(self.ids['label_spinner'].text, font_size=15)
-			label.refresh()
-			text = label.texture
-			self.obj.add(Rectangle(size=text.size, pos=touch.pos, texture=text))
-			self.obj.add(Line(rectangle = (touch.pos[0], touch.pos[1], 10, 10), width = 1.5))
-
-
-			self.current_rect = self.obj
-			self.rects.append(self.obj)
-			self.canvas.add(self.obj)
+			mouse_loc = touch.pos
+			im_loc = self.ids['canvas_labeling'].pos
+			im_size = self.ids['canvas_labeling'].size
+			if im_loc[0] < mouse_loc[0] and mouse_loc[0] < im_loc[0] + im_size[0] and im_loc[1] < mouse_loc[1] and mouse_loc[1] < im_loc[1] + im_size[1]:
+				self.drawing = True
+				self.points = touch.pos
+				self.obj = InstructionGroup()
+				self.obj.add(Color(1,0,0))
+				label = CoreLabel(self.ids['label_spinner'].text, font_size=15)
+				label.refresh()
+				text = label.texture
+				self.obj.add(Rectangle(size=text.size, pos=touch.pos, texture=text))
+				self.obj.add(Line(rectangle = (touch.pos[0], touch.pos[1], 5, 5), width = 1.5))
+				self.current_rect = self.obj
+				self.rects.append(self.obj)
+				self.draw_canvas.canvas.add(self.obj)
 
 
 	def undo(self):
 		if len(self.rects) != 0:
 			todel = self.rects.pop()
-			self.canvas.remove(todel)
+			self.draw_canvas.canvas.remove(todel)
 
 
 	def clearAllLabeledRect(self):
 		for rect in self.rects:
-			self.canvas.remove(rect)
+			self.draw_canvas.canvas.remove(rect)
 
 		self.rects = []
 
@@ -303,4 +377,8 @@ class Labeler_Labeling(Screen):
 	def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
 		print(keycode)
 		if keycode[1] == 'delete':
-			print('bleh')
+
+			# def deleteCurrentLabel(self, key, clicked_node, treeview):
+			if LabelerManager.getInstance().deleteCurrentLabel(self.draw_canvas, self.ids['treeview'].selected_node.text, self.ids['treeview'].selected_node, self.ids['treeview']):
+				self.just_delete = True
+
