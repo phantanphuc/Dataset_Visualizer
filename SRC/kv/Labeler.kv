@@ -90,13 +90,13 @@
                 Widget:
                     size_hint: None, None
                     size: (self.parent.width, self.parent.height * 9/10)
-                    canvas:
+                    id : canvas_labeling
                         
-                        Rectangle:
-                            id : rect
-                            source: '/home/phucpt2/Desktop/visual/data/img/person_007.png'
-                            pos: self.pos
-                            size: self.size
+                        # Rectangle:
+                        #     id : rect
+                        #     source: 'D:/dataset/img/testtt/asfasdasdas.png'
+                        #     pos: self.pos
+                        #     size: self.size
 
 
         BoxLayout:
@@ -111,6 +111,10 @@
                 size_hint: 1.0, 0.3
                 text: 'Test'
                 on_press: root.setLookPath()
+            Button:
+                size_hint: 1.0, 0.3
+                text: 'Test2'
+                on_press: root.test2()
             Button:
                 size_hint: 1.0, 0.3
                 on_release: app.root.current = 'Labeler_Labeling'

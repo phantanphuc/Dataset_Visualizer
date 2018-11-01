@@ -1,82 +1,65 @@
 from kivy.app import App
 from kivy.lang import Builder
-from kivy.core.image import Image as CoreImage
-from kivy.properties import ListProperty, ObjectProperty, NumericProperty
-from kivy.clock import Clock
-from kivy.core.window import Window
-from math import sin, cos, pi
+from kivy.graphics import Line, Color, InstructionGroup
+from kivy.uix.widget import Widget
 
 
-kv = '''
+class MyWidget(Widget):
+
+    undolist = []
+    objects = []
+    drawing = False
+
+    def on_touch_up(self, touch):
+        self.drawing = False
+
+    def on_touch_move(self, touch):
+        if self.drawing:
+            self.points.append(touch.pos)
+            self.obj.children[-1].points = self.points
+        else:
+            self.drawing = True
+            self.points = [touch.pos]
+            self.obj = InstructionGroup()
+            self.obj.add(Color(1,0,0))
+            self.obj.add(Line())
+            self.objects.append(self.obj)
+            self.canvas.add(self.obj)
+
+
+    def undo(self):
+        item = self.objects.pop(-1)
+        self.undolist.append(item)
+        self.canvas.remove(item)
+
+    def redo(self):
+        item = self.undolist.pop(-1)
+        self.objects.append(item)
+        self.canvas.add(item)
+
+
+KV = """
+
 BoxLayout:
-    Widget:
-        canvas:
-            Color:
-                rgba: 1, 1, 1, 1
-            Mesh:
-                vertices: app.mesh_points
-                indices: range(len(app.mesh_points))
-                texture: app.mesh_texture
-                mode: 'triangle_fan'
-    BoxLayout:
-        orientation: 'vertical'
-        size_hint_x: None
-        width: 100
-        Slider:
-            value: app.offset_x
-            on_value: app.offset_x = args[1]
-            min: -1
-            max: 1
-        Slider:
-            value: app.offset_y
-            on_value: app.offset_y = args[1]
-            min: -1
-            max: 1
-        Slider:
-            value: app.radius
-            on_value: app.radius = args[1]
-            min: 10
-            max: 1000
-        Slider:
-            value: app.sin_wobble
-            on_value: app.sin_wobble = args[1]
-            min: -50
-            max: 50
-        Slider:
-            value: app.sin_wobble_speed
-            on_value: app.sin_wobble_speed = args[1]
-            min: 0
-            max: 50
-            step: 1
-'''
+    MyWidget:
+        id: widget
+    Button:
+        text: "undo"
+        on_release:
+            widget.undo()
+    Button:
+        text: "redo"
+        on_release:
+            widget.redo()
 
 
-class MeshBallApp(App):
-    mesh_points = ListProperty([])
-    mesh_texture = ObjectProperty(None)
-    radius = NumericProperty(500)
-    offset_x = NumericProperty(.5)
-    offset_y = NumericProperty(.5)
-    sin_wobble = NumericProperty(0)
-    sin_wobble_speed = NumericProperty(0)
+"""
+
+
+class MyApp(App):
 
     def build(self):
-        self.mesh_texture = CoreImage('data/logo/kivy-icon-512.png').texture
-        Clock.schedule_interval(self.update_points, 0)
-        return Builder.load_string(kv)
+        root = Builder.load_string(KV)
+        return root
 
-    def update_points(self, *args):
-        points = [Window.width / 2, Window.height / 2, .5, .5]
-        i = 0
-        while i < 2 * pi:
-            i += 0.01 * pi
-            points.extend([
-                Window.width / 2 + cos(i) * (self.radius + self.sin_wobble * sin(i * self.sin_wobble_speed)),
-                Window.height / 2 + sin(i) * (self.radius + self.sin_wobble * sin(i * self.sin_wobble_speed)),
-                self.offset_x + sin(i),
-                self.offset_y + cos(i)])
-
-        self.mesh_points = points
-
-if __name__ == '__main__':
-    MeshBallApp().run()
+MyApp().run()

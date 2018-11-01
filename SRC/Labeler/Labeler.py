@@ -8,6 +8,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeViewLabel
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
+from kivy.graphics.instructions import InstructionGroup
+from kivy.graphics import Color, Line, Rectangle
 
 Builder.load_string("""
 #:kivy 1.1.0
@@ -115,7 +117,9 @@ class Labeler_Labeling(Screen):
 
 	def on_parent(self, widget, parent):
 
-		LabelerManager.getInstance().generateTreeView("/home/phucpt2/Desktop/visual/data/img", self.ids['treeview'])
+		self.draw_canvas = self.ids['canvas_labeling']
+
+		LabelerManager.getInstance().generateTreeView("D:\dataset\img", self.ids['treeview'])
 
 		self.toref = 0
 
@@ -123,16 +127,34 @@ class Labeler_Labeling(Screen):
 		self.ids['treeview'].bind(minimum_height=self.ids['treeview'].setter("height"))
 
 
-	def setLookPath(self):
-		# print(self.ids['treeview'].selected_node.text)
-		# print(self.ids['treeview'].selected_node.parent_node.text)
-		# self.ids['treeview'].add_node(TreeViewLabel(text='blah',  is_open=True), self.ids['treeview'].selected_node)
-		print(self.ids)
-		print(self.canvas)
-		print(self.canvas.ids.children)
-		# LabelerManager.getInstance().updateCurrentImage(self.ids['label_spinner'].text, self.canvas.ids['rect'])
+		with self.draw_canvas.canvas:
+			self.draw_canvas.bg = Rectangle(source='D:/dataset/img/testtt/asfasdasdas.png', 
+					pos=self.draw_canvas.pos, size=self.draw_canvas.size)
 
 		
+
+
+	def setLookPath(self):
+		with self.draw_canvas.canvas:
+
+			temp = self.draw_canvas.size
+			temp = (temp[0], temp[1] / 2)
+
+			self.data = InstructionGroup()
+			self.data.add(Rectangle(source='D:/dataset/img/person_009.png', 
+					pos=self.draw_canvas.pos, size=temp, group='my_group'))
+
+			self.draw_canvas.canvas.add(self.data)
+
+			# self.draw_canvas.canvas.remove_group(data)
+
+	def test2(self):
+		self.draw_canvas.canvas.remove(self.data)
+		self.canvas.remove(self.data)
+		# self.draw_canvas.canvas.remove_group('my_group')
+		pass
+
+
 	def show_load(self):
 		content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
 		self._popup = Popup(title="Load file", content=content,
@@ -159,3 +181,34 @@ class Labeler_Labeling(Screen):
 	def dismiss_popup(self):
 		self._popup.dismiss()
 
+
+	undolist = []
+	objects = []
+	drawing = False
+
+	def on_touch_up(self, touch):
+		self.drawing = False
+
+	def on_touch_move(self, touch):
+		if self.drawing:
+			self.points.append(touch.pos)
+			self.obj.children[-1].points = self.points
+		else:
+			self.drawing = True
+			self.points = [touch.pos]
+			self.obj = InstructionGroup()
+			self.obj.add(Color(1,0,0))
+			self.obj.add(Line())
+			self.objects.append(self.obj)
+			self.canvas.add(self.obj)
+
+
+	def undo(self):
+		item = self.objects.pop(-1)
+		self.undolist.append(item)
+		self.canvas.remove(item)
+
+	def redo(self):
+		item = self.undolist.pop(-1)
+		self.objects.append(item)
+		self.canvas.add(item)
