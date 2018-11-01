@@ -65,12 +65,13 @@
                 size_hint: None, None
                 size: (root.width / 4, root.height * 0.8)
 
-
                 TreeView:
                     id: treeview
                     size_hint: None, None
                     size: (root.width / 4, root.height * 0.8)
                     minimum_height : root.height * 0.8
+                    on_touch_up : root.chooseImage()
+
             GridLayout:
                 rows : 2
                 GridLayout:
@@ -91,7 +92,8 @@
                     size_hint: None, None
                     size: (self.parent.width, self.parent.height * 9/10)
                     id : canvas_labeling
-                        
+
+
                         # Rectangle:
                         #     id : rect
                         #     source: 'D:/dataset/img/testtt/asfasdasdas.png'
@@ -115,6 +117,10 @@
                 size_hint: 1.0, 0.3
                 text: 'Test2'
                 on_press: root.test2()
+            Button:
+                size_hint: 1.0, 0.3
+                text: 'undo'
+                on_press: root.undo()
             Button:
                 size_hint: 1.0, 0.3
                 on_release: app.root.current = 'Labeler_Labeling'
