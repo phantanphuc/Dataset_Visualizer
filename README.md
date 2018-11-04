@@ -32,3 +32,23 @@ $ source {env_directory}/bin/activate
 ```bash
 $ pip3 install -r requirements.txt
 ```
+
+### Running Server
+
+- Make migrations
+
+```bash
+$ python ./web/manage.py makemigrations
+```
+
+- Migrate Db
+
+```bash
+$ python ./web/manage.py migrate
+```
+
+- Runserver
+
+```bash
+$ python ./web/manage.py runserver
+```
