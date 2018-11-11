@@ -13,35 +13,81 @@ from kivy.graphics import Color, Line, Rectangle
 from kivy.uix.label import Label
 from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
+from kivy.uix.image import Image
+import math
+from kivy.config import Config
+
 # D:\AA\repo2\GItrepo\Dataset_Visualizer\Label
 # /home/phucpt2/Desktop/visual/prj/Dataset_Visualizer/Label
-Builder.load_string("""
-#:kivy 1.1.0
+# Builder.load_string("""
+# #:kivy 1.1.0
 
-<LoadDialog>:
-	BoxLayout:
-		size: root.size
-		pos: root.pos
-		orientation: "vertical"
-		FileChooserListView:
-			id: filechooser
-			path: 'D:/AA/repo2/GItrepo/Dataset_Visualizer/Label'
+# <LoadDialog>:
+# 	BoxLayout:
+# 		size: root.size
+# 		pos: root.pos
+# 		orientation: "vertical"
+# 		FileChooserListView:
+# 			id: filechooser
+# 			path: 'D:/AA/repo2/GItrepo/Dataset_Visualizer/Label'
 
-		BoxLayout:
-			size_hint_y: None
-			height: 30
-			Button:
-				text: "Cancel"
-				on_release: root.cancel()
+# 		BoxLayout:
+# 			size_hint_y: None
+# 			height: 30
+# 			Button:
+# 				text: "Cancel"
+# 				on_release: root.cancel()
 
-			Button:
-				text: "Load"
-				on_release: root.load(filechooser.path, filechooser.selection)""")
+# 			Button:
+# 				text: "Load"
+# 				on_release: root.load(filechooser.path, filechooser.selection)
+
+# <SaveDialog>:
+# 	text_input: text_input
+# 	BoxLayout:
+# 		size: root.size
+# 		pos: root.pos
+# 		orientation: "vertical"
+
+# 		TextInput:
+# 			id: output_format
+# 			size_hint_y: None
+# 			height: 100
+# 			multiline: True
+
+# 		FileChooserListView:
+# 			id: filechooser
+# 			on_selection: text_input.text = self.selection and self.selection[0] or ''
+
+# 		TextInput:
+# 			id: text_input
+# 			size_hint_y: None
+# 			height: 30
+# 			multiline: False
+
+# 		BoxLayout:
+# 			size_hint_y: None
+# 			height: 30
+# 			Button:
+# 				text: "Cancel"
+# 				on_release: root.cancel()
+
+# 			Button:
+# 				text: "Save"
+# 				on_release: root.save(filechooser.path, text_input.text)
+
+# 				""")
 
 Builder.load_file("kv/Labeler.kv")
+Builder.load_file("kv/labeler_popup.kv")
 
 class LoadDialog(FloatLayout):
 	load = ObjectProperty(None)
+	cancel = ObjectProperty(None)
+
+class SaveDialog(FloatLayout):
+	save = ObjectProperty(None)
+	text_input = ObjectProperty(None)
 	cancel = ObjectProperty(None)
 
 class LabelerManager:
@@ -49,7 +95,9 @@ class LabelerManager:
 		self.path = '/'
 		self.labeled_data = {}
 		self.label_classes = {}
-
+		self.scale_factor = 1.0
+		self.current_img_size = (0,0)
+		self.current_mode = 1 # 0: add mode, 1: delete mode
 
 	# Structure of labeled data:
 	# {Key, (path, node, [child])}
@@ -72,6 +120,9 @@ class LabelerManager:
 
 	def getPath(self):
 		return self.path
+
+	def getCurrentMode(self):
+		return self.current_mode
 
 	def generateTreeView(self, path, treeview):
 
@@ -96,15 +147,34 @@ class LabelerManager:
 				else:
 					break
 
+	def changeBackgroundImage(self, path, canvas):
+		with canvas.canvas:
+
+				current_canvas_size = canvas.size
+				canvas.bg = Rectangle(source=path, pos=canvas.pos, 
+					size= canvas.size)
+
+				self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
+				canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
+
 
 	def updateCurrentImage(self, key, canvas, clicked_node):
 		# canvas = self.draw_canvas self.ids['treeview'].selected_node
 		canvas.canvas.clear()
 
 		if key in self.labeled_data.keys():
+			self.current_mode = 0
 
-			with canvas.canvas:
-				canvas.bg = Rectangle(source=self.labeled_data[key][0], pos=canvas.pos, size=canvas.size)
+			self.changeBackgroundImage(self.labeled_data[key][0], canvas)
+
+			# with canvas.canvas:
+
+			# 	current_canvas_size = canvas.size
+			# 	canvas.bg = Rectangle(source=self.labeled_data[key][0], pos=canvas.pos, 
+			# 		size= canvas.size)
+
+			# 	self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
+			# 	canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
 
 			treenode = self.labeled_data[key]
 			# {Key, (path, node, [child])}
@@ -127,10 +197,10 @@ class LabelerManager:
 			return objlist
 
 		else:
+			self.current_mode = 1
 			parent_key = clicked_node.parent_node.text
 
-			with canvas.canvas:
-				canvas.bg = Rectangle(source=self.labeled_data[parent_key][0], pos=canvas.pos, size=canvas.size)
+			self.changeBackgroundImage(self.labeled_data[parent_key][0], canvas)
 
 			treenode = self.labeled_data[parent_key]
 			# {Key, (path, node, [child])}
@@ -157,8 +227,16 @@ class LabelerManager:
 			# self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_002.png', 
 			# 		pos=self.draw_canvas.pos, size=self.draw_canvas.size)
 
-	def registCurrentLabel(self, filename, rect, label, treeview): #label: text
+	def registCurrentLabel(self, filename, rect, label, treeview, canvas): #label: text
 		# child {name, id, label, rect, node}
+		im_size = canvas.bg.size
+		img_size = (im_size[0] * self.scale_factor, im_size[1] * self.scale_factor)
+
+		base_point = canvas.pos
+		relative_rect = (rect[0] - base_point[0], im_size[1] - (rect[1] - base_point[1]), 
+				abs(rect[2] / self.scale_factor), abs(rect[3] / self.scale_factor ))
+
+
 		treenode = self.labeled_data[filename]
 
 		curr_id = 0
@@ -175,9 +253,30 @@ class LabelerManager:
 		child_node['id'] = curr_id
 		child_node['label'] = self.label_classes[label]
 		child_node['rect'] = rect
+		child_node['relative_rect'] = relative_rect
 		child_node['node'] = child_node_tree
 
 		treenode[2].append(child_node)
+
+	def saveToFile(self, path, format_str):
+		with open(path, 'w') as fout:
+			format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
+			format_node_toreplace = format_str[format_str.find('{'):  format_str.find('}') + 1]
+
+			for key, value in self.labeled_data.items():
+				if len(value[2]) > 0:
+					list_bb = ''
+					for bounding_box in value[2]:
+						relative_rect = bounding_box['relative_rect']
+						format_node = format_node_abstract.replace('$x', str(relative_rect[0]))\
+															.replace('$y', str(relative_rect[1]))\
+															.replace('$w', str(relative_rect[2]))\
+															.replace('$h', str(relative_rect[3]))\
+															.replace('$label', str(bounding_box['label']))
+						list_bb = list_bb + format_node
+					towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
+					fout.write(towrite)
+
 
 	def deleteCurrentLabel(self, canvas, key, clicked_node, treeview):
 		
@@ -201,8 +300,10 @@ class LabelerManager:
 			del parent_node[2][del_index]
 			canvas.canvas.clear()
 
-			with canvas.canvas:
-				canvas.bg = Rectangle(source=parent_node[0], pos=canvas.pos, size=canvas.size)
+			self.changeBackgroundImage(parent_node[0], canvas)
+
+			# with canvas.canvas:
+			# 	canvas.bg = Rectangle(source=parent_node[0], pos=canvas.pos, size=canvas.size)
 
 			return True
 		return False
@@ -230,13 +331,14 @@ class Labeler_Labeling(Screen):
 		self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
 
-		Window.bind(on_resize=self.on_resize)
+		
 
 	def on_parent(self, widget, parent):
 
 		self.just_delete = True
 		self.draw_canvas = self.ids['canvas_labeling']
 		self.drawing_rect = (0,0,0,0)
+		# Window.bind(on_resize=self.on_resize)
 
 		LabelerManager.getInstance().generateTreeView("D:/dataset/img/", self.ids['treeview'])
 
@@ -246,19 +348,22 @@ class Labeler_Labeling(Screen):
 
 		with self.draw_canvas.canvas:
 			self.draw_canvas.bg = Rectangle(source='D:/dataset/img/carsgraz_004.png', 
-					pos=self.draw_canvas.pos, size=self.draw_canvas.size)
+					pos=self.draw_canvas.pos)#, size=self.draw_canvas.size)
 
 	
+		
 
 
-	def on_resize(self, window, width, height):
+	# def on_resize(self, window, width, height):
+	# 	print(self)
 
-		pass		
-
-		# with self.draw_canvas.canvas:
-		# 	self.ids['canvas_labeling'].canvas.clear()
-		# 	self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_003.png', 
-		# 			pos=self.draw_canvas.pos, size=self.draw_canvas.size)
+	# 	try:
+	# 		with self.draw_canvas.canvas:
+	# 			# self.ids['canvas_labeling'].canvas.clear()
+	# 			self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_003.png', 
+	# 					pos=self.draw_canvas.pos, size=self.draw_canvas.size)
+	# 	except:
+	# 		pass
 
 	def chooseImage(self):
 
@@ -266,8 +371,10 @@ class Labeler_Labeling(Screen):
 		self.just_delete = False
 
 		if (self.ids['treeview'].selected_node != None):
-			print(self.ids['treeview'].selected_node.text)
-			self.rects = LabelerManager.getInstance().updateCurrentImage(self.ids['treeview'].selected_node.text, self.draw_canvas, self.ids['treeview'].selected_node)
+
+
+			self.rects = LabelerManager.getInstance().updateCurrentImage(
+						self.ids['treeview'].selected_node.text, self.draw_canvas, self.ids['treeview'].selected_node)
 
 
 	def setLookPath(self):
@@ -314,10 +421,9 @@ class Labeler_Labeling(Screen):
 	drawing = False
 
 	def on_touch_up(self, touch):
-		if self.ids['label_spinner'].text == '' or self.just_delete:
+		if self.ids['label_spinner'].text == '' or self.just_delete or LabelerManager.getInstance().getCurrentMode() == 1:
 			return
 		self.drawing = False
-		# registCurrentLabel(self, filename, rect, label, treeview):
 		mouse_loc = touch.pos
 
 		im_loc = self.ids['canvas_labeling'].pos
@@ -325,11 +431,11 @@ class Labeler_Labeling(Screen):
 
 		if im_loc[0] < mouse_loc[0] and mouse_loc[0] < im_loc[0] + im_size[0] and im_loc[1] < mouse_loc[1] and mouse_loc[1] < im_loc[1] + im_size[1]:
 			if self.drawing_rect[2] > 5:
-				LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'])
+				LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'], self.draw_canvas)
 
 	def on_touch_move(self, touch):
 
-		if self.ids['label_spinner'].text == '' or self.just_delete:
+		if self.ids['label_spinner'].text == '' or self.just_delete or LabelerManager.getInstance().getCurrentMode() == 1:
 			return
 
 		if self.drawing:
@@ -382,3 +488,17 @@ class Labeler_Labeling(Screen):
 			if LabelerManager.getInstance().deleteCurrentLabel(self.draw_canvas, self.ids['treeview'].selected_node.text, self.ids['treeview'].selected_node, self.ids['treeview']):
 				self.just_delete = True
 
+
+	def show_save(self):
+		content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
+		self._popup = Popup(title="Save file", content=content,
+							size_hint=(0.9, 0.9))
+		self._popup.open()
+
+
+	def save(self, path, filename, format_string):
+		if path in filename:
+			LabelerManager.getInstance().saveToFile(filename, format_string)
+		else:
+			LabelerManager.getInstance().saveToFile(path + '/' + filename, format_string)
+		self.dismiss_popup()
