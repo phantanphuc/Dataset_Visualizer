@@ -5,7 +5,7 @@ class Image(models.Model):
     name = models.CharField(max_length=30,unique=True)
     width = models.FloatField(null=True)
     height = models.FloatField(null=True)
-    location = models.CharField(max_length=30,null=True)
+    location = models.CharField(max_length=300,null=True)
 
     def __str__(self):
         return self.name

@@ -12,6 +12,19 @@ def submitData(request):
     elif request.method == 'POST':
         data = request.POST.dict()
 
+        if 'image_name' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Image Name'}})
+        if 'pointer_x' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Pointer X'}})
+        if 'pointer_y' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Pointer Y'}})
+        if 'box_width' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Bounding Box Width'}})
+        if 'box_height' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Bounding Box Height'}})
+        if 'label' not in data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Missing Image Label'}})
+
         image = data['image_name']
         pointer_x = data['pointer_x']
         pointer_y = data['pointer_y']
@@ -19,6 +32,18 @@ def submitData(request):
         box_height = data['box_height']
         label = data['label']
 
-        bounding_box = BoundingBox()
+        image_data = Image.objects.filter(name=image)
 
-        return JsonResponse({'status':'success'})
+        if not image_data:
+            return JsonResponse({'status': 'success', 'error': {'mssg': 'Image not found'}})
+
+        BoundingBox.objects.create(image=image_data[0],
+                                   pointer_x=pointer_x,
+                                   pointer_y=pointer_y,
+                                   box_width=box_width,
+                                   box_height=box_height,
+                                   label=label)
+
+        return JsonResponse({'status': 'success'})
+
+
