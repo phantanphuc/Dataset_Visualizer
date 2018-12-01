@@ -17,66 +17,6 @@ from kivy.uix.image import Image
 import math
 from kivy.config import Config
 
-# D:\AA\repo2\GItrepo\Dataset_Visualizer\Label
-# /home/phucpt2/Desktop/visual/prj/Dataset_Visualizer/Label
-# Builder.load_string("""
-# #:kivy 1.1.0
-
-# <LoadDialog>:
-# 	BoxLayout:
-# 		size: root.size
-# 		pos: root.pos
-# 		orientation: "vertical"
-# 		FileChooserListView:
-# 			id: filechooser
-# 			path: 'D:/AA/repo2/GItrepo/Dataset_Visualizer/Label'
-
-# 		BoxLayout:
-# 			size_hint_y: None
-# 			height: 30
-# 			Button:
-# 				text: "Cancel"
-# 				on_release: root.cancel()
-
-# 			Button:
-# 				text: "Load"
-# 				on_release: root.load(filechooser.path, filechooser.selection)
-
-# <SaveDialog>:
-# 	text_input: text_input
-# 	BoxLayout:
-# 		size: root.size
-# 		pos: root.pos
-# 		orientation: "vertical"
-
-# 		TextInput:
-# 			id: output_format
-# 			size_hint_y: None
-# 			height: 100
-# 			multiline: True
-
-# 		FileChooserListView:
-# 			id: filechooser
-# 			on_selection: text_input.text = self.selection and self.selection[0] or ''
-
-# 		TextInput:
-# 			id: text_input
-# 			size_hint_y: None
-# 			height: 30
-# 			multiline: False
-
-# 		BoxLayout:
-# 			size_hint_y: None
-# 			height: 30
-# 			Button:
-# 				text: "Cancel"
-# 				on_release: root.cancel()
-
-# 			Button:
-# 				text: "Save"
-# 				on_release: root.save(filechooser.path, text_input.text)
-
-# 				""")
 
 Builder.load_file("kv/Labeler.kv")
 Builder.load_file("kv/labeler_popup.kv")
@@ -89,6 +29,18 @@ class SaveDialog(FloatLayout):
 	save = ObjectProperty(None)
 	text_input = ObjectProperty(None)
 	cancel = ObjectProperty(None)
+
+	def on_spinner_select(self, text):
+		print(text)
+		if text == 'XML':
+			self.ids['output_format'].text = '$filename { $x $y $w $h $label}'
+		if text == 'TEXT':
+			self.ids['output_format'].text = \
+				'<record>\n' \
+				'\t<name>$filename</name>\n'\
+				'{\t<object>$x $y $w $h $label</object>}\n'\
+				'</record>'
+
 
 class LabelerManager:
 	def __init__(self):
