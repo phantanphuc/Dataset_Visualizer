@@ -79,6 +79,13 @@ class LabelerManager:
 	def generateTreeView(self, path, treeview):
 
 		# "D:\dataset\img"
+		self.labeled_data = {}
+		iterator = treeview.iterate_all_nodes()
+		try:
+			for node in list(iterator):
+				treeview.remove_node(node)
+		except:
+			pass
 
 		for root, dirs, files in os.walk(path):
 			for file in files:
@@ -292,7 +299,7 @@ class Labeler_Labeling(Screen):
 		self.drawing_rect = (0,0,0,0)
 		# Window.bind(on_resize=self.on_resize)
 
-		LabelerManager.getInstance().generateTreeView("D:/dataset/img/", self.ids['treeview'])
+		LabelerManager.getInstance().generateTreeView(LabelerManager.getInstance().getPath(), self.ids['treeview'])
 
 		self.ids['treeview'].hide_root = True
 		self.ids['treeview'].bind(minimum_height=self.ids['treeview'].setter("height"))
