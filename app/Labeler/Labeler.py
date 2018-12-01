@@ -32,9 +32,9 @@ class SaveDialog(FloatLayout):
 
 	def on_spinner_select(self, text):
 		print(text)
-		if text == 'XML':
-			self.ids['output_format'].text = '$filename { $x $y $w $h $label}'
 		if text == 'TEXT':
+			self.ids['output_format'].text = '$filename { $x $y $w $h $label}'
+		if text == 'XML':
 			self.ids['output_format'].text = \
 				'<record>\n' \
 				'\t<name>$filename</name>\n'\
