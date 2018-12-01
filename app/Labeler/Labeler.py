@@ -217,6 +217,8 @@ class LabelerManager:
 
 		treenode[2].append(child_node)
 
+		return (child_node['name'], child_node['node'])
+
 	def saveToFile(self, path, format_str):
 		with open(path, 'w') as fout:
 			format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
@@ -294,6 +296,7 @@ class Labeler_Labeling(Screen):
 
 	def on_parent(self, widget, parent):
 
+		self.just_undo = False
 		self.just_delete = True
 		self.draw_canvas = self.ids['canvas_labeling']
 		self.drawing_rect = (0,0,0,0)
@@ -390,7 +393,8 @@ class Labeler_Labeling(Screen):
 
 		if im_loc[0] < mouse_loc[0] and mouse_loc[0] < im_loc[0] + im_size[0] and im_loc[1] < mouse_loc[1] and mouse_loc[1] < im_loc[1] + im_size[1]:
 			if self.drawing_rect[2] > 5:
-				LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'], self.draw_canvas)
+				self.last_added = LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'], self.draw_canvas)
+				self.just_undo = False
 
 	def on_touch_move(self, touch):
 
@@ -422,9 +426,13 @@ class Labeler_Labeling(Screen):
 
 
 	def undo(self):
-		if len(self.rects) != 0:
+		if len(self.rects) != 0 and not self.just_undo:
 			todel = self.rects.pop()
-			self.draw_canvas.canvas.remove(todel)
+			# self.draw_canvas.canvas.remove(todel)
+			self.last_added
+			if LabelerManager.getInstance().deleteCurrentLabel(self.draw_canvas, self.last_added[0], self.last_added[1], self.ids['treeview']):
+				self.just_undo = True
+
 
 
 	def clearAllLabeledRect(self):
