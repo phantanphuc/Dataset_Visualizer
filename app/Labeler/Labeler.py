@@ -36,10 +36,10 @@ class SaveDialog(FloatLayout):
 			self.ids['output_format'].text = '$filename { $x $y $w $h $label}'
 		if text == 'XML':
 			self.ids['output_format'].text = \
-				'<record>\n' \
+				'<record>\r\n' \
 				'\t<name>$filename</name>\n'\
-				'{\t<object>$x $y $w $h $label</object>}\n'\
-				'</record>'
+				'{\t<object>$x $y $w $h $label</object>\n}'\
+				'</record>\n'
 
 
 class LabelerManager:
