@@ -50,6 +50,7 @@ class LabelerManager:
 		self.scale_factor = 1.0
 		self.current_img_size = (0,0)
 		self.current_mode = 1 # 0: add mode, 1: delete mode
+		self.inv_label_classes = 0
 
 	# Structure of labeled data:
 	# {Key, (path, node, [child])}
@@ -69,6 +70,9 @@ class LabelerManager:
 
 	def addToLabelClasses(self, key, value):
 		self.label_classes[key] = value
+
+	def applyLabelClasses(self):
+		self.inv_label_classes = {v: k for k, v in self.label_classes.items()}
 
 	def getPath(self):
 		return self.path
@@ -186,15 +190,20 @@ class LabelerManager:
 			# self.draw_canvas.bg = Rectangle(source='/home/phucpt2/Desktop/visual/data/img/person_002.png', 
 			# 		pos=self.draw_canvas.pos, size=self.draw_canvas.size)
 
-	def registCurrentLabel(self, filename, rect, label, treeview, canvas): #label: text
+	def registCurrentLabel(self, filename, rect, label, treeview, canvas, loading = False): #label: text
 		# child {name, id, label, rect, node}
 		im_size = canvas.bg.size
 		img_size = (im_size[0] * self.scale_factor, im_size[1] * self.scale_factor)
 
 		base_point = canvas.pos
-		relative_rect = (rect[0] - base_point[0], im_size[1] - (rect[1] - base_point[1]), 
-				abs(rect[2] / self.scale_factor), abs(rect[3] / self.scale_factor ))
 
+		if loading:
+			relative_rect = rect
+			rect = (relative_rect[0] + base_point[0], + relative_rect[1] + base_point[1], 
+					abs(relative_rect[2] / self.scale_factor), abs(relative_rect[3] / self.scale_factor ))
+		else:
+			relative_rect = (rect[0] - base_point[0], im_size[1] - (rect[1] - base_point[1]), 
+					abs(rect[2] * self.scale_factor), abs(rect[3] * self.scale_factor ))
 
 		treenode = self.labeled_data[filename]
 
@@ -220,23 +229,27 @@ class LabelerManager:
 		return (child_node['name'], child_node['node'])
 
 	def saveToFile(self, path, format_str):
-		with open(path, 'w') as fout:
-			format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
-			format_node_toreplace = format_str[format_str.find('{'):  format_str.find('}') + 1]
+		with open(path + '.meta', 'w') as fmeta:
+			with open(path, 'w') as fout:
+				format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
+				format_node_toreplace = format_str[format_str.find('{'):  format_str.find('}') + 1]
 
-			for key, value in self.labeled_data.items():
-				if len(value[2]) > 0:
-					list_bb = ''
-					for bounding_box in value[2]:
-						relative_rect = bounding_box['relative_rect']
-						format_node = format_node_abstract.replace('$x', str(relative_rect[0]))\
-															.replace('$y', str(relative_rect[1]))\
-															.replace('$w', str(relative_rect[2]))\
-															.replace('$h', str(relative_rect[3]))\
-															.replace('$label', str(bounding_box['label']))
-						list_bb = list_bb + format_node
-					towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
-					fout.write(towrite)
+				for key, value in self.labeled_data.items():
+					if len(value[2]) > 0:
+						meta_write = key
+						list_bb = ''
+						for bounding_box in value[2]:
+							relative_rect = bounding_box['relative_rect']
+							format_node = format_node_abstract.replace('$x', str(relative_rect[0]))\
+																.replace('$y', str(relative_rect[1]))\
+																.replace('$w', str(relative_rect[2]))\
+																.replace('$h', str(relative_rect[3]))\
+																.replace('$label', str(bounding_box['label']))
+							list_bb = list_bb + format_node
+							meta_write = meta_write + ' ' + str(relative_rect[0]) + ' ' + str(relative_rect[1]) + ' ' + str(relative_rect[2]) + ' ' + str(relative_rect[3]) + ' ' + str(bounding_box['label'])
+						towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
+						fout.write(towrite)
+						fmeta.write(meta_write)
 
 
 	def deleteCurrentLabel(self, canvas, key, clicked_node, treeview):
@@ -367,11 +380,33 @@ class Labeler_Labeling(Screen):
 				LabelerManager.getInstance().addToLabelClasses(info[0], info[1])
 
 			self.ids['label_spinner'].values = label_arr
+		self.dismiss_popup()
+		LabelerManager.getInstance().applyLabelClasses()
 
-			
-				
+
+	def show_load_label(self):
+		content = LoadDialog(load=self.load_label, cancel=self.dismiss_popup)
+		self._popup = Popup(title="Load file", content=content,
+							size_hint=(0.9, 0.9))
+		self._popup.open()
+
+	def load_label(self, path, filename):
+		if LabelerManager.getInstance().inv_label_classes == 0:
+			return
+		with open(filename[0], 'r') as file:
+			lines = file.readlines()
+			for line in lines:
+				info = line.replace('\n', '').split(' ')
+				print(info)
+
+				for i in range(1, len(info), 5):
+					label = LabelerManager.getInstance().inv_label_classes[info[i + 4]]
+					LabelerManager.getInstance().registCurrentLabel(info[0], [float(info[i + 0]), float(info[i + 1]), float(info[i + 2]), float(info[i + 3])], label, self.ids['treeview'], self.draw_canvas, True)
+					
 
 		self.dismiss_popup()
+
+
 	def dismiss_popup(self):
 		self._popup.dismiss()
 

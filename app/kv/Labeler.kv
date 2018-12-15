@@ -123,5 +123,9 @@
 				on_press: root.undo()
 			Button:
 				size_hint: 1.0, 0.3
+				text: 'Load'
+				on_release: root.show_load_label()
+			Button:
+				size_hint: 1.0, 0.3
 				text: 'Save'
 				on_release: root.show_save()
