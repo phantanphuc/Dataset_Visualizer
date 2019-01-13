@@ -13,9 +13,11 @@ from kivy.graphics import Color, Line, Rectangle
 from kivy.uix.label import Label
 from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
-from kivy.uix.image import Image
-import math
+from kivy.uix.image import Image, AsyncImage
 from kivy.config import Config
+import requests
+import math
+import json
 
 
 Builder.load_file("kv/Labeler.kv")
@@ -84,6 +86,11 @@ class LabelerManager:
 
 		# "D:\dataset\img"
 		self.labeled_data = {}
+		request_result = requests.get('http://localhost:3000/api/images')
+		
+		image_list = request_result.json()['data']
+		# print('test tree view')
+		# print (imageList.json())
 		iterator = treeview.iterate_all_nodes()
 		try:
 			for node in list(iterator):
@@ -91,31 +98,40 @@ class LabelerManager:
 		except:
 			pass
 
-		for root, dirs, files in os.walk(path):
-			for file in files:
+		for image in image_list:
+			tree_node = treeview.add_node(TreeViewLabel(text=image['image_names'], is_open=True))
+			self.labeled_data[image['image_names']] = (image['image_names'], tree_node, [])
 
-				if root == path:
-					tree_node = treeview.add_node(TreeViewLabel(text=file, is_open=True))
+		# for root, dirs, files in os.walk(path):
+		# 	for file in files:
 
-					# print(root)
-					# print(dirs)
-					# print(file)
+		# 		if root == path:
+		# 			tree_node = treeview.add_node(TreeViewLabel(text=file, is_open=True))
 
-					full_path = root + '/' + file
+		# 			# print(root)
+		# 			# print(dirs)
+		# 			# print(file)
 
-					self.labeled_data[file] = (full_path, tree_node, [])
+		# 			full_path = root + '/' + file
 
-					# aa = treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
-					# treeview.remove_node(aa)
-				else:
-					break
+		# 			self.labeled_data[file] = (full_path, tree_node, [])
+
+		# 			# aa = treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
+		# 			# treeview.remove_node(aa)
+		# 		else:
+		# 			break
 
 	def changeBackgroundImage(self, path, canvas):
+		print(path)
+		image_data = 'http://localhost:3000/api/images/'+path
+
+# Rectangle(source=image_data, pos=canvas.pos, 
+# 					size= canvas.size)
+
 		with canvas.canvas:
 
 				current_canvas_size = canvas.size
-				canvas.bg = Rectangle(source=path, pos=canvas.pos, 
-					size= canvas.size)
+				canvas.bg = AsyncImage(source=image_data,pos=canvas.pos,size=canvas.size)
 
 				self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
 				canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
@@ -229,6 +245,8 @@ class LabelerManager:
 		return (child_node['name'], child_node['node'])
 
 	def saveToFile(self, path, format_str):
+
+		to_upload = []
 		with open(path + '.meta', 'w') as fmeta:
 			with open(path, 'w') as fout:
 				format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
@@ -238,6 +256,7 @@ class LabelerManager:
 					if len(value[2]) > 0:
 						meta_write = key
 						list_bb = ''
+						json_list_bb = []
 						for bounding_box in value[2]:
 							relative_rect = bounding_box['relative_rect']
 							format_node = format_node_abstract.replace('$x', str(relative_rect[0]))\
@@ -247,10 +266,14 @@ class LabelerManager:
 																.replace('$label', str(bounding_box['label']))
 							list_bb = list_bb + format_node
 							meta_write = meta_write + ' ' + str(relative_rect[0]) + ' ' + str(relative_rect[1]) + ' ' + str(relative_rect[2]) + ' ' + str(relative_rect[3]) + ' ' + str(bounding_box['label'])
+							json_list_bb = json_list_bb + [{'x':relative_rect[0],'y':relative_rect[1],'width':relative_rect[2],'height':relative_rect[3],'label':bounding_box['label']}]
+
 						towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
 						fout.write(towrite)
 						fmeta.write(meta_write)
+						to_upload = to_upload + [{'imageName':key, 'boundingBox':json_list_bb}]
 
+		requests.request("POST", 'http://localhost:3000/api/images/save', data=json.dumps(to_upload) , headers={'Content-Type': "application/json"})
 
 	def deleteCurrentLabel(self, canvas, key, clicked_node, treeview):
 		
