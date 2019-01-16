@@ -53,6 +53,7 @@ class LabelerManager:
 		self.current_img_size = (0,0)
 		self.current_mode = 1 # 0: add mode, 1: delete mode
 		self.inv_label_classes = 0
+		self.mode = 'server'
 
 	# Structure of labeled data:
 	# {Key, (path, node, [child])}
@@ -82,15 +83,14 @@ class LabelerManager:
 	def getCurrentMode(self):
 		return self.current_mode
 
+	def setMode(self, smode):
+		self.mode = smode
+
 	def generateTreeView(self, path, treeview):
 
 		# "D:\dataset\img"
 		self.labeled_data = {}
-		request_result = requests.get('http://localhost:3000/api/images')
-		
-		image_list = request_result.json()['data']
-		# print('test tree view')
-		# print (imageList.json())
+
 		iterator = treeview.iterate_all_nodes()
 		try:
 			for node in list(iterator):
@@ -98,35 +98,41 @@ class LabelerManager:
 		except:
 			pass
 
-		for image in image_list:
-			tree_node = treeview.add_node(TreeViewLabel(text=image['image_names'], is_open=True))
-			self.labeled_data[image['image_names']] = (image['image_names'], tree_node, [])
+		if self.mode == 'server':
 
-		# for root, dirs, files in os.walk(path):
-		# 	for file in files:
+			request_result = requests.get('http://localhost:3000/api/images')
+			image_list = request_result.json()['data']
 
-		# 		if root == path:
-		# 			tree_node = treeview.add_node(TreeViewLabel(text=file, is_open=True))
 
-		# 			# print(root)
-		# 			# print(dirs)
-		# 			# print(file)
+			for image in image_list:
+				tree_node = treeview.add_node(TreeViewLabel(text=image['image_names'], is_open=True))
+				self.labeled_data[image['image_names']] = (image['image_names'], tree_node, [])
 
-		# 			full_path = root + '/' + file
+		elif self.mode == 'local':
 
-		# 			self.labeled_data[file] = (full_path, tree_node, [])
+			for root, dirs, files in os.walk(path):
+				for file in files:
 
-		# 			# aa = treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
-		# 			# treeview.remove_node(aa)
-		# 		else:
-		# 			break
+					if root == path:
+						tree_node = treeview.add_node(TreeViewLabel(text=file, is_open=True))
+
+						# print(root)
+						# print(dirs)
+						# print(file)
+
+						full_path = root + '/' + file
+
+						self.labeled_data[file] = (full_path, tree_node, [])
+
+						# aa = treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
+						# treeview.remove_node(aa)
+					else:
+						break
 
 	def changeBackgroundImage(self, path, canvas):
 		print(path)
 		image_data = 'http://localhost:3000/api/images/'+path
 
-# Rectangle(source=image_data, pos=canvas.pos, 
-# 					size= canvas.size)
 
 		with canvas.canvas:
 
@@ -135,6 +141,9 @@ class LabelerManager:
 
 				self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
 				canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
+
+
+		
 
 
 	def updateCurrentImage(self, key, canvas, clicked_node):
@@ -313,6 +322,7 @@ class Labeler(Screen):
 class Labeler_ChooseFile(Screen):
 	def start_labeling(self):
 		LabelerManager.getInstance().setPath(self.ids['file_chooser'].path)
+		LabelerManager.getInstance().setMode('local')
 		print(self.ids)
 
 
