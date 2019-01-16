@@ -107,8 +107,14 @@ class LabelerManager:
 
 					# aa = treeview.add_node(TreeViewLabel(text='blah',  is_open=True), tree_node)
 					# treeview.remove_node(aa)
+
+
+
 				else:
 					break
+
+		treeview.select_node(tree_node)
+
 
 	def changeBackgroundImage(self, path, canvas):
 		with canvas.canvas:
@@ -199,8 +205,8 @@ class LabelerManager:
 
 		if loading:
 			relative_rect = rect
-			rect = (relative_rect[0] + base_point[0], + relative_rect[1] + base_point[1], 
-					abs(relative_rect[2] / self.scale_factor), abs(relative_rect[3] / self.scale_factor ))
+			rect = (relative_rect[0] + base_point[0], (im_size[1] - relative_rect[1]) + base_point[1], 
+					abs(relative_rect[2] / self.scale_factor), -abs(relative_rect[3] / self.scale_factor ))
 		else:
 			relative_rect = (rect[0] - base_point[0], im_size[1] - (rect[1] - base_point[1]), 
 					abs(rect[2] * self.scale_factor), abs(rect[3] * self.scale_factor ))
@@ -246,10 +252,10 @@ class LabelerManager:
 																.replace('$h', str(relative_rect[3]))\
 																.replace('$label', str(bounding_box['label']))
 							list_bb = list_bb + format_node
-							meta_write = meta_write + ' ' + str(relative_rect[0]) + ' ' + str(relative_rect[1]) + ' ' + str(relative_rect[2]) + ' ' + str(relative_rect[3]) + ' ' + str(bounding_box['label'])
+							meta_write = meta_write + ' ' + str(relative_rect[0]) + ' ' + str(relative_rect[1]) + ' ' + str(relative_rect[2]) + ' ' + str(relative_rect[3]) + ' ' + str(bounding_box['label']) 
 						towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
 						fout.write(towrite)
-						fmeta.write(meta_write)
+						fmeta.write(meta_write + '\n')
 
 
 	def deleteCurrentLabel(self, canvas, key, clicked_node, treeview):
@@ -322,10 +328,10 @@ class Labeler_Labeling(Screen):
 
 
 		with self.draw_canvas.canvas:
-			self.draw_canvas.bg = Rectangle(source='D:/dataset/img/carsgraz_004.png', 
+			self.draw_canvas.bg = Rectangle(source='', 
 					pos=self.draw_canvas.pos)#, size=self.draw_canvas.size)
 
-	
+		self.chooseImage()
 		
 
 
@@ -346,8 +352,6 @@ class Labeler_Labeling(Screen):
 		self.just_delete = False
 
 		if (self.ids['treeview'].selected_node != None):
-
-
 			self.rects = LabelerManager.getInstance().updateCurrentImage(
 						self.ids['treeview'].selected_node.text, self.draw_canvas, self.ids['treeview'].selected_node)
 
@@ -427,7 +431,7 @@ class Labeler_Labeling(Screen):
 		im_size = self.ids['canvas_labeling'].size
 
 		if im_loc[0] < mouse_loc[0] and mouse_loc[0] < im_loc[0] + im_size[0] and im_loc[1] < mouse_loc[1] and mouse_loc[1] < im_loc[1] + im_size[1]:
-			if self.drawing_rect[2] > 5:
+			if self.drawing_rect[2] > 10:
 				self.last_added = LabelerManager.getInstance().registCurrentLabel(self.ids['treeview'].selected_node.text, self.drawing_rect, self.ids['label_spinner'].text, self.ids['treeview'], self.draw_canvas)
 				self.just_undo = False
 
