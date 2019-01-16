@@ -86,6 +86,9 @@ class LabelerManager:
 	def setMode(self, smode):
 		self.mode = smode
 
+	def getMode(self):
+		return self.mode
+
 	def generateTreeView(self, path, treeview):
 
 		# "D:\dataset\img"
@@ -130,11 +133,11 @@ class LabelerManager:
 						break
 
 	def changeBackgroundImage(self, path, canvas):
-		print(path)
-		image_data = 'http://localhost:3000/api/images/'+path
 
+		if self.mode == 'server': 
 
-		with canvas.canvas:
+			image_data = 'http://localhost:3000/api/images/'+path
+			with canvas.canvas:
 
 				current_canvas_size = canvas.size
 				canvas.bg = AsyncImage(source=image_data,pos=canvas.pos,size=canvas.size)
@@ -142,8 +145,17 @@ class LabelerManager:
 				self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
 				canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
 
+		elif self.mode == 'local':
 
-		
+			with canvas.canvas:
+
+				current_canvas_size = canvas.size
+				canvas.bg = Rectangle(source=path, pos=canvas.pos, 
+					size= canvas.size)
+
+				self.scale_factor = current_canvas_size[1] / canvas.bg.texture.size[1]
+				canvas.bg.size = (canvas.bg.texture.size[0] * self.scale_factor, current_canvas_size[1])
+
 
 
 	def updateCurrentImage(self, key, canvas, clicked_node):
