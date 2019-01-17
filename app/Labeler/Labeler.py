@@ -535,11 +535,39 @@ class Labeler_Labeling(Screen):
 
 
 	def show_save(self):
-		content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
-		self._popup = Popup(title="Save file", content=content,
-							size_hint=(0.9, 0.9))
-		self._popup.open()
 
+		if LabelerManager.getInstance().getMode() == 'local':
+
+			content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
+			self._popup = Popup(title="Save file", content=content,
+								size_hint=(0.9, 0.9))
+			self._popup.open()
+
+		else:
+			to_upload = []
+			format_node_abstract = format_str[format_str.find('{') + 1:  format_str.find('}')]
+			format_node_toreplace = format_str[format_str.find('{'):  format_str.find('}') + 1]
+
+			for key, value in self.labeled_data.items():
+				if len(value[2]) > 0:
+					meta_write = key
+					list_bb = ''
+					json_list_bb = []
+					for bounding_box in value[2]:
+						relative_rect = bounding_box['relative_rect']
+						format_node = format_node_abstract.replace('$x', str(relative_rect[0]))\
+																	.replace('$y', str(relative_rect[1]))\
+																	.replace('$w', str(relative_rect[2]))\
+																	.replace('$h', str(relative_rect[3]))\
+																	.replace('$label', str(bounding_box['label']))
+						list_bb = list_bb + format_node
+						meta_write = meta_write + ' ' + str(relative_rect[0]) + ' ' + str(relative_rect[1]) + ' ' + str(relative_rect[2]) + ' ' + str(relative_rect[3]) + ' ' + str(bounding_box['label'])
+						json_list_bb = json_list_bb + [{'x':relative_rect[0],'y':relative_rect[1],'width':relative_rect[2],'height':relative_rect[3],'label':bounding_box['label']}]
+
+					towrite = format_str.replace('$filename', key).replace(format_node_toreplace, list_bb) + '\n'
+					to_upload = to_upload + [{'imageName':key, 'boundingBox':json_list_bb}]
+
+			requests.request("POST", 'http://localhost:3000/api/images/save', data=json.dumps(to_upload) , headers={'Content-Type': "application/json"})
 
 	def save(self, path, filename, format_string):
 		if path in filename:
